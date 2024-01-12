@@ -691,3 +691,43 @@ Javaの場合、Javaにおけるjarバイナリのようなアーティファク
 ## Mabl
 
 - E2E テストをお手軽にメンテできるツール
+## Argo Rollouts
+
+- kubernets向けのプログレッシブデリバリを提供する
+    - Blue-Greenデプロイ
+    - カナリアデプロイ
+- Argo Rolloutsは以下のトラフィック制御ツールに対応している
+    - Istio
+    - nginx
+    - AWS App Mesh
+    - AWS ALBなど
+- そのためIstioベースのカナリアデプロイができる
+- Argo Rolloutsでは、RolloutsリソースがKubernetes標準のDeploymentリソースを置き換える形を利用し、デリバリ戦略を定義する
+- デプロイしたアプリケーションに不具合が発生した場合、ロールバックできる
+
+```yaml
+strategy:
+    canary:
+      maxSurge: "25%"
+      maxUnavailable: 0
+      analysis:
+        templates:
+        - templateName: success-rate
+        args:
+        - name: service-name
+          value: service-canary.default.svc.cluster.local
+      canaryService: service-canary # 新しくデプロイするサービス
+      stableService: service-stable # デプロイ済みのサービス
+      trafficRouting:
+        istio:
+          virtualService:
+            name: vsvc
+      steps: # カナリアデプロイの実行ステップを順番に記載
+      - setWeight: 20 # 20%
+      - pause: {duration: 60} # 60秒待機
+      - setWeight: 50
+      - pause: {duration: 60}
+      - setWeight: 80
+      - pause: {duration: 60}
+      - setWeight: 100
+```
