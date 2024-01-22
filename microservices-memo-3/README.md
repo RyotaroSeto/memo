@@ -441,3 +441,105 @@ liveness-readiness-startup-probesについては[こちら](https://kubernetes.i
 - AlphaバージョンのAPIを利用したKubernetesリソースのみを提供しているエコシステムを使用することは避けた方が良い
 - argoCDの各マイナーバージョンごとの[アップグレードガイド](https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/)
 - argoCDとは違いアップグレード手段が確立されていないエコシステムはGitHubリリースノートやCRDの変更がないか確認する
+
+## Namespaceの概要
+
+- default NamespaceはNamespaceを指定していない場合作られる場所だから使用は避ける
+- kube-system Namespaceはシステム系のコンポーネントがデプロイされるため避ける
+- Namespaceを分離しても、コンテナランタイムレベルでの隔離性が上がったり、通信経路などが隔離されるわけではないため、パブリッククラウドのように完全なマルチテナント環境が作られるわけではない。完全に隔離した環境を用意したい場合、クラスタ分割を検討する
+- Namespaceの分け方と分離単位
+    - 基本的に利用するサービスやチーム単位でNamespaceを分ける
+    - マイクロサービスアーキテクチャでそれぞれ個々のマイクロサービスを開発している場合は、マイクロサービスごとにNamespaceを分ける
+    - また一つのチームが複数のサービスを開発している場合でも、今後の分離性を考えてサービスごとにNamespaceを切ることがおすすめ。
+    - 単一のNamespaceに大量のリソースが集中した場合、リソース一覧を取得するリクエストを送信した際にレスポンスが悪化するケースがある
+- [Hierarchical Namespace Controller](https://github.com/kubernetes-sigs/hierarchical-namespaces)
+    - 階層型namespaceを作れる
+    - 階層構造のメリットとして、一部のresourceをnamespaceで分離しつつ、階層の親子関係での伝搬（propagation）を可能
+    - Namespaceに対して階層構造を導入し、さまざまなリソースを親Namespaceから子Namespaceに伝播できる
+    - 特定のデータをもつConfigMapやSecret、特定の認可ポリシーをもつRoleなどを階層下の各Namespaceにも公開したい場合利用
+    - [サンプルコード](https://github.com/snagasawa/kubernetes-samples/tree/main/hierarchical-namespaces)
+    
+    ```yaml
+    department-a
+    ├── [s] team-1
+    │   ├── [s] product-x
+    │   │   ├── [s] product-x-dev
+    │   │   ├── [s] product-x-prd
+    │   │   ├── [s] product-x-qa
+    │   │   └── [s] product-x-stg
+    │   └── [s] product-y
+    │       ├── [s] product-y-dev
+    │       ├── [s] product-y-prd
+    │       ├── [s] product-y-qa
+    │       └── [s] product-y-stg
+    └── [s] team-2
+        └── [s] product-z
+    department-b
+    └── [s] team-3
+    ```
+    
+- マルチクラスタ・マルチクラウド
+    - 一般的にArgoCDなどのGitOpsツールをマルチクラスタ向けに設定して管理する
+    - その他方法として、[Istioを使ってマルチクラスタ環境](https://istio.io/latest/docs/setup/install/multicluster/)下でネットワークを相互接続できる
+        - Serviceのサービスディスカバリを利用して、一方のクラスタ上から別のクラスタ上のPodへとそのほかのクラスタを意識することなく通信できる
+    - その他マネージドKubernetesには複数のクラスタを連携させる機能を提供しているものもある
+
+## RBAC
+
+- オールベースの認可の仕組み。権限をRoleリソースで管理し、ユーザやグループやServiceAccountに対するRoleの割り当てをRoleBindingで定義する
+
+## 監査ログの出力
+
+- 通常のアクセスログとは別に、監査に役立つ様々な情報を出力できる
+    - 誰がいつどこからどのような操作をリクエストしたか、そしてその操作が許容されたのか
+    - ※監査ログを有効にしたい場合、kube-apiserverのメモリ使用量が増加する
+- 監査ポリシー
+    - どのようなイベントを記録し、どのようなデータを含むべきかのルールを定義
+    - 監査レベルは以下4つで定義
+        - None: 出力しない
+        - Metadata: リソースに対するリクエストのメタデータ(リクエストしたユーザー、タイムスタンプ、リソース、動作など)を出力する。リクエスト内容やレスポンス内容は含まない
+        - Request: メタデータに加えてリクエスト内容を出力する。レスポンス内容は出力しない
+        - RequestResponse: メタデータ、リクエスト内容、レスポンス内容を出力する
+    - よく設定される監査ポリシーの[サンプル](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/#audit-policy)
+- 監査バックエンド
+    - 監査ログの出力先は監査バックエンドで指定する
+    - 現在サポートしているのはファイルへの出力とWebHookを介した外部への出力
+    - [サンプル](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/#audit-backends)
+- 監査ログの分析
+    - FalcoやDatadogを使って監査ログをモニタリングできる
+    
+
+## NetworkPolicy
+
+- 特定のPodに対する、特定のIngress通信/Egress通信を対象として制御できる
+- 通信内容の指定は以下が使用できる
+    - IPアドレス
+    - TCP/UDPポート番号
+    - Namespace
+    - Podのラベル情報
+- ホワイトリストでの指定しかできないため、特定の通信を明示的に遮断することはできない
+- [Cilium CNI](https://docs.cilium.io/en/latest/security/policy/)プラグインによるNetworkPolicyの拡張
+    - kubernetesのネットワークポリシーは便利ではありが、ホワイトリストのみ対応しており、ブラックリスト(明示的に特定の通信を遮断)には対応していない
+    - Serviceを使った指定、ホスト名やパスを使ったL7レベルの通信制御機能、ICMPといった他プロトコルへの対応、Namespaceに依存しないクラスタ全体へのNetworkPolicyの適応などに対応していない
+    - これらに対応するためのCNIプラグイン
+        - Antrea
+        - Calico
+        - Cilium
+    - CiliumClusterwideNetworkPolicyを使うと、Namespaceに依存せずにクラスタ全体に対してポリシーを適用できる
+    - 指定したHTTP通信を制限できる。Getのみとか。指定パスとか
+    - CNPはHTTP以外のL7の通信プロトコルとしてDNSやKafkaもサポートしている
+- [NetworkPolicyシュミレータ](https://editor.networkpolicy.io/?id=9jbPj61BY792gQkN)
+    - CiliumはNetworkPolicyシュミレータを提供するWebサイトを用意している。
+    - ポリシー適用結果を視覚的に確かめられる
+
+## Serviceでのアクセス制御
+
+- Serviceリソースはロードバランサへの接続元IPアドレスを制御する機能が備わっている
+- spec.loadBalancerSourceRangesにCIDRブロックを指定すると、対象のServiceに対応するロードバランサにアクセスできるクライアントをそのブロックに含まれるIPアドレスをもつものに制限できる
+- なおloadBalancerSourceRangesが指定されていない場合、デフォルト値0.0.0.0/0が採用され全てのIPアドレスが許可される
+
+## Ingressでのアクセス制御
+
+- IngressではServiceのように接続元IPアドレスを制限できない
+- アノテーションや設定ファイルを使って、 Ingressに許可する接続元IPアドレスを通知する
+- [Ingress Nginx Controller](https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md)ではnginx.ingress.kubernetes.io/whitelist-source-rangeをアノテーションとして、バリユーに接続を許可するIPアドレスを示したCIDRブロックを記述する。また同様にCIDRをせってしても接続元IPアドレスの制限ができる
