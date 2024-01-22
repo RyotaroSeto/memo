@@ -357,3 +357,87 @@ liveness-readiness-startup-probesについては[こちら](https://kubernetes.i
     - 証明書の秘密鍵などを外部に漏洩してしまった場合は自動更新を待たずすぐに更新すべきなので、kubectlプラグインで手動更新する。
     - Cert Managerを利用すれば、Ingress用の証明書の発行や更新を自動化することも可能。アノテーションにissureを指定する。
     - またAdmissionWebConfigurationリソースのチェックや変更を行うことができ、「Certificateリソースから作成された証明書のSecretリソースを手動で確認し、AdmissionWebConfigurationマニフェストのcaBundleにコピーする」といった手間削減できる
+
+## Istio
+
+- Gateway
+    - k8s.example.comというホスト、かつ80番ポートでリクエストを受け付ける
+    - 外部から受信したリクエストや外部へ送信するリクエストをハンドリングする。このロードバランサをEnvoy Proxyを指す
+- VirtualService
+    - DestinationRuleで設定したsubsetに対してそれぞれ5割ずつルーティングを行う
+    - Gatewayリソースで指定したホストに対するトラフィックのルーティング情報を表す。何割トラフィックを送るかもここで示す
+- DestinationRule
+    - それぞれのラベルに対してのルーティングルールをsubsetとして定義する
+    - 最終的にトラフィックを送信するPodを決定するルールを記述する。ルーティングするPodを最終的に決定している
+
+## Argo Rollouts
+
+- ブルーグリーン(リソースに問題がなければ導入可能)やカナリアを簡単に実現するためのツール
+- ブルーグリーン
+    - Rolloutsリソースとブルー/グリーンそれぞれのServiceリソースが必要。
+- カナリア
+    - setWeightとdurationとstepで段階的にリリース可能
+- Istioと組み合わせることでさらに高度なカナリアリリースが可能
+    - RolloutsリソースにIstioのVirtualServiceとDestinationRuleの参照を指定することで、stepで指定した比率でトラフィック制御が可能
+    - Istio単体のカナリアとの違いは,DeploymentやServiceのラベルによるバージョン管理を自身で行う必要がない。またRolloutリソースの中にVirtualServiceのwightが反映されている。
+
+## HPAによるPodの水平スケーリング
+
+- Kubernetesにおける水平スケーリングはレプリカ数を変更し、Podの数を増減させてスケールイン/スケールアウトを行う
+- HPAを設定するのはkubectl autoscaleコマンドを使用する方法とHPAマニフェストを書く方法
+- カスタムメトリクス
+    - スケール指標にCPUやメモリ以外のGPUなど計算リソースのメトリクスやHTTPのリクエスト数など計算リソース以外のメトリクスも活用できる
+    - [MetricsAPI](https://github.com/kubernetes/metrics)を介してKubernetesのAPIサーバにメトリクスを送信することで可能
+    - 最近ではPrometheousメトリクスをカスタムメトリクスとして利用する方法も増えている
+        - PrometheusメトリクスをHPAなどに活用できる[Prometheus Adapter](https://github.com/kubernetes-sigs/prometheus-adapter)など
+    - Datadogでも同じようなこと可能
+- これらのカスタムメトリクスはHPAマニフェスト内でPodメトリクスやObjectメトリクスとして設定できる
+- Externalメトリクス
+    - kubernetesクラスタ外部のオブジェクトのメトリクスを使ったオートスケーリングが可能
+    - ユースケース:Pub/Subの残りメッセージ数を考慮したスケーリングや提供サービス内のイベント開始時間を使ったスケーリング
+        - **[PubSub/Redisを用いたGoによるスケーラブルなworkerの構築と運用](https://engineering.mercari.com/blog/entry/20211216-09550a386d/)**
+        - ****[Kubernetes HPA External Metrics を利用した Scheduled-Scaling](https://blog.studysapuri.jp/entry/2020/11/30/scheduled-scaling-with-hpa)****
+- スケールの閾値として設定するメトリクスの値は50%から80%程度の十分余裕のある値にする
+
+## VPAによるPodの垂直スケーリング
+
+- kubenetesで垂直スケーリングはPodの個数は変更せず、Podの要求リソースを変更してスケールアップ/スケールダウンをする
+- 使用するには[autosacler](https://github.com/kubernetes/autoscaler)をインストールする必要がある
+
+## MPAによるPodの多次元スケーリング
+
+- MPAはGKEで提供しているKubernetesリソース。
+- 水平スケーリングと垂直スケーリングを組み合わせたスケーリングが可能
+- HPAとVPAの組み合わせは同時に実行された場合、Podに過度にリソースが割り当てられたり、逆にリソースの割当量が不足したりする危険性がある
+- MPAは水平スケーリングと垂直スケーリングをうまく組み合わせて解決してくれる
+
+## Cluster Autoscalerによるクラスタのスケーリング
+
+- podのスケーリングに対して、Cluster Autoscalerはノード数を操作する
+- ノードのリソース不足でpodのスケジューリングが失敗した時はノード数を増やせる
+
+## 削除されるKubernetesのリソース
+
+- Alpha: 事前通知なしで削除される場合がある
+- Beta: リリースから9ヶ月,もしくは3マイナーリリース以内に非推奨になり、非推奨後9ヶ月,もしくは3マイナーリリース以内に削除される
+- GA: 同一メジャーバージョン内で非推奨になることはあっても、削除はされない
+- 削除されるリソースを調べる方法は以下
+    - Kubernetes公式の[マイグレーションガイド](https://kubernetes.io/docs/reference/using-api/deprecation-guide/)を確認する
+    - kube-apiserverに直接問い合わせる
+        - `kubectl api-versions`
+        - `kubectl api-versions -v 10`表示レベルを指定できる
+        - この中で表示される`preferredVersion`はAPI Versionにおいて最優先で使用されるAPI Version、つまり非推奨ではないAPI Versionを表す。
+        - 直接非推奨なAPI VersionをJSON形式で取得でき、1つ目のマイグレーションガイドを参照する方法と比べ自動化しやすい
+- 古いAPI Versionを使用した既存のマニフェストを新しいAPI Versionを使用したものに変換する方法は手作業での修正だけでなく`kubectl-convert`コマンドを使用して変換する方法も用意されている
+
+## [KEP](https://github.com/kubernetes/enhancements)
+
+- アップストリームのKubernetesで機能の追加や変更に必要な[提案書](https://github.com/kubernetes/enhancements)
+- 想定されるユーザーの利用ケースやテスト実装計画、どのkubernetesバージョンでBetaやGAに昇格されるかなどの計画について記載されている
+- 定期的に見ることで、次にKubernetesで実装されるであろう機能の確認や、既存機能のユースケースおよびその機能が実装されたバックグラウンドを確認できる
+
+## Kubernetes本体以外のエコシステムの更新
+
+- AlphaバージョンのAPIを利用したKubernetesリソースのみを提供しているエコシステムを使用することは避けた方が良い
+- argoCDの各マイナーバージョンごとの[アップグレードガイド](https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/)
+- argoCDとは違いアップグレード手段が確立されていないエコシステムはGitHubリリースノートやCRDの変更がないか確認する
