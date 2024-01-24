@@ -543,3 +543,32 @@ liveness-readiness-startup-probesについては[こちら](https://kubernetes.i
 - IngressではServiceのように接続元IPアドレスを制限できない
 - アノテーションや設定ファイルを使って、 Ingressに許可する接続元IPアドレスを通知する
 - [Ingress Nginx Controller](https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md)ではnginx.ingress.kubernetes.io/whitelist-source-rangeをアノテーションとして、バリユーに接続を許可するIPアドレスを示したCIDRブロックを記述する。また同様にCIDRをせってしても接続元IPアドレスの制限ができる
+
+## [Pod Security Admission](https://kubernetes.io/ja/docs/concepts/security/pod-security-admission/)
+
+- Podセキュリティのベストプラクティスを提供するためのKubernetesの標準機能
+- PSAを適用したいNamespaceへラベルを付与する
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enforce-baseline-pss
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: v1.26
+```
+
+- これを付与してDeployment等をさk洲英すると警告が表示される。またPodは作成されておらず、ReplicaSetのイベントエラーが書き込まれる
+- その他設定できるラベルは[こちら](https://kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-namespace-labels/)
+
+## ログの収集
+
+- Grafana Loki。Fluentdなどを使って各コンテナのログを収集し、ストレージへ保管する
+    - またGrafanaへのデータ提供機能ももっている
+
+## 監視
+
+- Prometheusの監視機能が使える
+    - 使用するには事前にPromQLを使ってアラートの条件を満たしておく必要がある。アラート条件を設定すると、条件を満たした際にAlertmanagerへとアラートが送信される。
+- アラートを行うFalcoもある
