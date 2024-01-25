@@ -84,8 +84,6 @@
         - 1つ以上のConsumerをグルーピングしたConsumerGroupを構成することで、Topicから受信するイベントを負荷分散可能
             - ConsumerGroup内で1つのPartitionにつき1つのConsumeしかイベントを呼び出せないため、ConsumerGroup内で負荷分散可能なConsumeは最大Partition数まで
         
-        ![スクリーンショット 2024-01-25 0.40.00.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/7a7e5864-a462-4ade-8192-955b500f68b1/67212c21-b6d0-410a-ae57-dc9307fbdc87/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88_2024-01-25_0.40.00.png)
-        
         - ConsumerGroupのConsumerの数が増減した場合、ConsumerへのPartitionの際割り当て(リバランス)が自動的に行われる
         
     
