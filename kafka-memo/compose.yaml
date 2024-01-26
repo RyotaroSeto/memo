@@ -1,0 +1,47 @@
+services:
+  zookeeper:
+    image: docker.io/confluentinc/cp-zookeeper:7.2.1
+    hostname: zookeeper
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker:9092,EXTERNAL://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  cli:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: cli
+    container_name: cli
+    depends_on:
+      - broker
+    entrypoint: /bin/bash
+    tty: true
+
+  gui:
+    image: docker.io/obsidiandynamics/kafdrop:3.30.0
+    hostname: gui
+    container_name: gui
+    depends_on:
+      - broker
+    ports:
+      - '9000:9000'
+    environment:
+      KAFKA_BROKERCONNECT: 'broker:9092'
+      JVM_OPTS: '-Xms32M -Xmx64M'
+      SERVER_SERVLET_CONTEXTPATH: '/'
