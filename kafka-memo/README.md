@@ -1,25 +1,25 @@
-## Kafkaとは
+## Kafka とは
 
 - ストリームデータの扱いに長けてる。
-    - ストリームデータとは時間とともに次々と発生する無限量のデータ。
+  - ストリームデータとは時間とともに次々と発生する無限量のデータ。
 - ストリームデータを高スループットかつ低レイテンシでリアルタイムに処理する。
 
-## Kafkaの機能、役割
+## Kafka の機能、役割
 
 - メッセージング・バス
-    - システム間でやりとりするデータ（イベント）を中継する
-    - イベントがKafkaを中継することでイベントを送受信するシステム同士は互いの物理的な位置や処理タイミングを知る必要がない。この特徴により、Kafkaを中継するシステム同士を疎結合に保てる
-    - 送受信形態はPublish/Subscribe型。送信側と受信側のシステムが1対多の関係
+  - システム間でやりとりするデータ（イベント）を中継する
+  - イベントが Kafka を中継することでイベントを送受信するシステム同士は互いの物理的な位置や処理タイミングを知る必要がない。この特徴により、Kafka を中継するシステム同士を疎結合に保てる
+  - 送受信形態は Publish/Subscribe 型。送信側と受信側のシステムが 1 対多の関係
 - ストレージ
-    - Kafkaに送信されたイベントはログファイルに追記することで永続化される
-    - ログファイルはKafkaが稼働するサーバー(Broker)のファイルシステムに書き込まれまれる
-    - アプリケーションがKafkaからイベントを受信してもログファイルにイベントが残るため、何度でもイベントを再生することが可能
-    - Kafkaはイベントだけでなく、受信側のシステムのイベント読み出し位置(Offset)も永続化する。読み出し位置を永続化することでイベントを受信するシステムは障害発生時も処理を途中から再開できるため、耐障害性の高いシステムとなる
-    - イベントの永続方法はログファイルの末尾への追記となるため、データベースのように直接イベントを更新または削除できない。イベントを更新・削除する場合は、送信側のシステムから更新・削除イベントをKafkaに送信して、受信側で別途処理する必要がある
+  - Kafka に送信されたイベントはログファイルに追記することで永続化される
+  - ログファイルは Kafka が稼働するサーバー(Broker)のファイルシステムに書き込まれまれる
+  - アプリケーションが Kafka からイベントを受信してもログファイルにイベントが残るため、何度でもイベントを再生することが可能
+  - Kafka はイベントだけでなく、受信側のシステムのイベント読み出し位置(Offset)も永続化する。読み出し位置を永続化することでイベントを受信するシステムは障害発生時も処理を途中から再開できるため、耐障害性の高いシステムとなる
+  - イベントの永続方法はログファイルの末尾への追記となるため、データベースのように直接イベントを更新または削除できない。イベントを更新・削除する場合は、送信側のシステムから更新・削除イベントを Kafka に送信して、受信側で別途処理する必要がある
 - ストリーム処理エンジン
-    - ストリーム処理のバックエンドにKafkaを採用できる
+  - ストリーム処理のバックエンドに Kafka を採用できる
 
-## Kafkaが作られた目的
+## Kafka が作られた目的
 
 - データの生成(送信)するシステムと、データを消費(受信)するシステムを分離する
 - 同じデータを複数のシステムで消費できるようにするためデータを永続化する
@@ -29,75 +29,146 @@
 ## ユースケース
 
 - メッセージブローカー
-    - システム間連携のデータハブ
-    - 受信側の高負荷を抑える処理バッファ
+  - システム間連携のデータハブ
+  - 受信側の高負荷を抑える処理バッファ
 - アナリティクス
-    - ユーザーアクティビティの追跡
-    - データウェアハウスのためのデータパイプライン
+  - ユーザーアクティビティの追跡
+  - データウェアハウスのためのデータパイプライン
 - 運用管理
-    - ログの集約・フォワーディング
-    - メトリクスの収集
+  - ログの集約・フォワーディング
+  - メトリクスの収集
 - データ共有
-    - バックエンドシステムのデータを要件に応じて別システムのデータストアに複製
-    - 複数ドメイン間のデータ共有
+  - バックエンドシステムのデータを要件に応じて別システムのデータストアに複製
+  - 複数ドメイン間のデータ共有
 - マイクロサービス
-    - イベントソーシングやCQRSのためのイベントストア
-    - サービス間連携のオーケストレーション(sagaパターン)
-    - モノリスからサービスを分割するためのデータ移行レイヤー(stranglerパターン)
-    
+  - イベントソーシングや CQRS のためのイベントストア
+  - サービス間連携のオーケストレーション(saga パターン)
+  - モノリスからサービスを分割するためのデータ移行レイヤー(strangler パターン)
 
 ## イベント
 
-- イベントはkafkaのメッセージ、レコードと同義
-- イベント内には4つのデータがある
-    - header
-        - イベントのメタデータや補足情報を格納する
-    - key
-        - イベント格納先の振り分けや集約に使用されるデータ。
-        - キーを設定しないことも可能
-    - timestamp
-        - イベントが作成された時刻。
-    - value
-        - イベントで処理したいデータ本体
-        - 文字列、数値、JSONといった様々な形式のデータを値に指定可能
+- イベントは kafka のメッセージ、レコードと同義
+- イベント内には 4 つのデータがある
+  - header
+    - イベントのメタデータや補足情報を格納する
+  - key
+    - イベント格納先の振り分けや集約に使用されるデータ。
+    - キーを設定しないことも可能
+  - timestamp
+    - イベントが作成された時刻。
+  - value
+    - イベントで処理したいデータ本体
+    - 文字列、数値、JSON といった様々な形式のデータを値に指定可能
 
-## TopicとPartition
-- Partitionはkafkaクライアントアプリケーションから送信されたイベントを保持する
-    - クライアントアプリケーションはPartitionごとにイベントを処理するため、Partition数を増やすことでシステム全体のスループットを高められる
-- イベントのキーを元に特定のPartitionに割り振られて保存される
-- 例えば、キーの1文字目が”a”から”j”はPartition0に、”k”から”t”はPartition1といった割り当てがされる
-- Partitionに保存されたイベントにはPartition内で連続した番号が割り振られる。この番号をOffsetという
-    - 同一のPartitionはイベントの順序が送信順であることが保証される
-        - ※ただしtopic内のPartition間では順序は保証されない
-    - 同一キーのイベントは同一のPartitionに割り振られる。
+## Topic と Partition
+
+- Partition は kafka クライアントアプリケーションから送信されたイベントを保持する
+  - クライアントアプリケーションは Partition ごとにイベントを処理するため、Partition 数を増やすことでシステム全体のスループットを高められる
+- イベントのキーを元に特定の Partition に割り振られて保存される
+- 例えば、キーの 1 文字目が”a”から”j”は Partition0 に、”k”から”t”は Partition1 といった割り当てがされる
+- Partition に保存されたイベントには Partition 内で連続した番号が割り振られる。この番号を Offset という
+  - 同一の Partition はイベントの順序が送信順であることが保証される
+    - ※ただし topic 内の Partition 間では順序は保証されない
+  - 同一キーのイベントは同一の Partition に割り振られる。
 - レプリケーションによる冗長化
-    - 各PartitionのイベントはKafkaが動作する複数のサーバ(Broker)にコピーされる
-    - 一つのPartitionにつき、レプリカ内で書き込み可能なPartitionをリーダーと呼び、それ以外のコピーはフォロワーと呼ぶ。
-    - リーダーレプリカのBrokerに障害が発生した場合、別のBrokerにいるフォロワーのPartitionがリーダーに昇格することで処理を続行させる
- 
-    ## ProducerとConsumer
-    
-    - Consumer
-        - イベント呼び出し後、Partitionごとの処理済みOffsetを記録するコミットを行う
-        - Offsetをコミットしておくことで、何らかの理由でConsumerが停止した場合も次の起動時に以前のコミット済みOffsetからPartition内のイベントを読み直せる
-        - ただしOffsetのコミット前にConsumerが停止すると、最新のコミットから停止直前まで読み取ったOffsetのイベントを2回読み取ることになるため、2回以上イベントを読みとっても問題にならないようConsumerの処理を冪等にしておく
-        - 1つ以上のConsumerをグルーピングしたConsumerGroupを構成することで、Topicから受信するイベントを負荷分散可能
-            - ConsumerGroup内で1つのPartitionにつき1つのConsumeしかイベントを呼び出せないため、ConsumerGroup内で負荷分散可能なConsumeは最大Partition数まで
-        
-        - ConsumerGroupのConsumerの数が増減した場合、ConsumerへのPartitionの際割り当て(リバランス)が自動的に行われる
-        
-    
-    ## BrokerとZookeeper
-    
-    - Brokerはkafkaがインストールされ、プロセスが稼働するサーバー
-        - ProducerとConsumerがイベントを送受信する物理的な宛先はBroker
-        - Brokerでクラスタを組むことで冗長化できる
-        - Partitionを複製するレプリカ数の最大値はBrokerの数と等しくなる
-    - Zookeeper
-        - 以下の情報を保持している
-            - Topicの一覧
-            - Topicの設定値
-            - Partitionの状態
-            - Brokerの一覧
-            - BrokerのACL(Access Control List)の設定値
-    - kafkaを動作するためにZookeeperは必須だったが、kafka2.8以降Kafkaクラスタを起動するモードが使用可能となった。このモードはZookeeperに保存されていたメタデータを全てBrokerで管理できるようになった
+
+  - 各 Partition のイベントは Kafka が動作する複数のサーバ(Broker)にコピーされる
+  - 一つの Partition につき、レプリカ内で書き込み可能な Partition をリーダーと呼び、それ以外のコピーはフォロワーと呼ぶ。
+  - リーダーレプリカの Broker に障害が発生した場合、別の Broker にいるフォロワーの Partition がリーダーに昇格することで処理を続行させる
+
+  ## Producer と Consumer
+
+  - Consumer
+
+    - イベント呼び出し後、Partition ごとの処理済み Offset を記録するコミットを行う
+    - Offset をコミットしておくことで、何らかの理由で Consumer が停止した場合も次の起動時に以前のコミット済み Offset から Partition 内のイベントを読み直せる
+    - ただし Offset のコミット前に Consumer が停止すると、最新のコミットから停止直前まで読み取った Offset のイベントを 2 回読み取ることになるため、2 回以上イベントを読みとっても問題にならないよう Consumer の処理を冪等にしておく
+    - 1 つ以上の Consumer をグルーピングした ConsumerGroup を構成することで、Topic から受信するイベントを負荷分散可能
+
+      - ConsumerGroup 内で 1 つの Partition につき 1 つの Consume しかイベントを呼び出せないため、ConsumerGroup 内で負荷分散可能な Consume は最大 Partition 数まで
+
+    - ConsumerGroup の Consumer の数が増減した場合、Consumer への Partition の際割り当て(リバランス)が自動的に行われる
+
+  ## Broker と Zookeeper
+
+  - Broker は kafka がインストールされ、プロセスが稼働するサーバー
+    - Producer と Consumer がイベントを送受信する物理的な宛先は Broker
+    - Broker でクラスタを組むことで冗長化できる
+    - Partition を複製するレプリカ数の最大値は Broker の数と等しくなる
+  - Zookeeper
+    - 以下の情報を保持している
+      - Topic の一覧
+      - Topic の設定値
+      - Partition の状態
+      - Broker の一覧
+      - Broker の ACL(Access Control List)の設定値
+  - kafka を動作するために Zookeeper は必須だったが、kafka2.8 以降 Kafka クラスタを起動するモードが使用可能となった。このモードは Zookeeper に保存されていたメタデータを全て Broker で管理できるようになった
+
+## Practise
+
+```bash
+$ docker compose up -d
+$ docker compose exec cli bash
+
+# コンテナ内
+$ kafka-topics --bootstrap-server broker:9092 --create --topic ird-first-topic --partitions 3 --replication-factor 1
+$ kafka-topics --bootstrap-server broker:9092 --list ird-first-topic
+$ kafka-topics --bootstrap-server broker:9092 --describe --topic ird-first-topic
+$ kafka-console-producer --bootstrap-server broker:9092 --topic ird-first-topic
+> hoge
+> fuga
+$ kafka-console-consumer --bootstrap-server broker:9092 --topic ird-first-topic --group G1 --from-beginning
+$ kafka-consumer-groups --bootstrap-server broker:9092 --list G1
+$ kafka-consumer-groups --bootstrap-server broker:9092 --describe --group G1
+$ kafka-console-consumer --bootstrap-server broker:9092 --topic ird-first-topic --group G1 --from-beginning
+$ kafka-consumer-groups --bootstrap-server broker:9092 --describe --group G1
+
+# コンテナ外
+$ kafka-topics --bootstrap-server <マシンのIPアドレス>:29092 --list ird-first-topic
+```
+
+## Application Exec
+
+```bash
+$ docker compose up -d
+$ docker compose exec cli bash
+$ kafka-console-consumer --bootstrap-server broker:9092 --topic ticket-order --from-beginning --property print.key=true --property key.separator=":"
+```
+
+## イベント送信成功判定タイミング acks
+
+### acks=0
+
+- イベントがネットワークに送信できた時点で正常処理とみなす
+- リーダーレプリカにさえイベントを保存できたか保証できない
+- acks=0 は他の設定値と比べて、実行速度は最速
+
+### acks=1
+
+- イベントがリーダーレプリカに書き込みができた時点で終了とみなす
+- リーダーレプリカのみがイベントの読み書きが許されているため、動作に必要な最低限のイベントが保存されたことを保証する
+- kafka2 系だとデフォルト値
+
+### acks=-1 or all
+
+- イベントがリーダーレプリカを含めて指定数のレプリカにイベントを書き込みできた時点で正常とみなす
+- イベントが保存されたことを確実に保証する
+- kafka3 系だとデフォルト値
+- 正常終了とみなすために必要な書き込みレプリカ数は Topic 作成時の min.insync.replicas で指定する
+- 全レプリカのコピー完了を待つため、イベント送信から送信完了となるまでの時間は設定値の中では最も遅くなる
+
+## イベント送信のリトライ
+
+- デフォルトのリトライ回数は 21 億回
+- アプリケーションのポリシーに従って retry 回数を指定した方が良い
+
+## Consumer Group によるスケールアウト
+
+- Partition を複数の Consumer で分割して処理するとスケールアウトできる
+
+## Offset の自動コミットと手動コミット
+
+- Consumer はデフォルトで Offset を 5 秒おきに自動コミットする。
+- 処理済みの Offset のコミット前に Partition のリバランスが発生した場合、別の Consumer が処理済みの Offset をサイド読み取る可能性がある。
+  - Consumer が同じイベントを読み取っても冪等になるロジックを実装していれば問題ないが、リバランスを考慮して明示的に Offset をコミットするか、コミット間隔を短くすることがおすすめ
+  - 自動コミットは設定値 enable.auto.commit=false で無効化できる。
