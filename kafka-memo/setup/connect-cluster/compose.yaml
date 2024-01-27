@@ -1,0 +1,133 @@
+services:
+  zookeeper:
+    image: docker.io/confluentinc/cp-zookeeper:7.2.1
+    hostname: zookeeper
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+
+  broker-1:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker-1
+    container_name: broker-1
+    depends_on:
+      - zookeeper
+    ports:
+      - 19092:19092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:19092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker-1:9092,EXTERNAL://localhost:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  broker-2:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker-2
+    container_name: broker-2
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker-2:9092,EXTERNAL://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  broker-3:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker-3
+    container_name: broker-3
+    depends_on:
+      - zookeeper
+    ports:
+      - 39092:39092
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:39092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker-3:9092,EXTERNAL://localhost:39092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  cli:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: cli
+    container_name: cli
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+    entrypoint: /bin/bash
+    tty: true
+
+  connect:
+    #image: docker.io/confluentinc/cp-kafka-connect-base:7.2.1
+    image: ird-cp-kafka-connect:1.0.0
+    hostname: connect
+    container_name: connect
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+    ports:
+      - 8083:8083
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: broker-1:9092,broker-2:9092,broker-3:9092
+      CONNECT_ZOOKEEPER_CONNECT: zookeeper:2181
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: 'connect-group'
+      CONNECT_CONFIG_STORAGE_TOPIC: 'connect-config'
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_OFFSET_STORAGE_TOPIC: 'connect-offsets'
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_STATUS_STORAGE_TOPIC: 'connect-status'
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.storage.StringConverter'
+      CONNECT_VALUE_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'localhost'
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: testpassword
+
+  source-database:
+    image: docker.io/library/postgres:14-alpine
+    hostname: source-database
+    container_name: source-database
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: connectuser
+      POSTGRES_PASSWORD: secretdayo
+      POSTGRES_DB: irdappdb
+    volumes:
+      - ./data/postgresql:/docker-entrypoint-initdb.d/
+
+  sink-database:
+    image: docker.io/library/redis:7-alpine
+    hostname: sink-database
+    container_name: sink-database
+    ports:
+      - 6379:6379
+
+  sink-storage:
+    image: quay.io/minio/minio:RELEASE.2022-07-17T15-43-14Z
+    hostname: sink-storage
+    container_name: sink-storage
+    command: minio server /data --console-address ":9001"
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: test
+      MINIO_ROOT_PASSWORD: testpassword
