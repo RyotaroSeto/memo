@@ -224,7 +224,6 @@ $ kafka-console-consumer --bootstrap-server broker:9092 --topic ticket-order --f
 - Kafka はデータベース、メッセージキュー、データウェアハウスや S3 などと接続して、Kafka をデータのハブとして利用可能
 
   ![kafka-connect](./setup/connect-cluster/kafka-connect.png)
-  ![エビフライトライアングル](http://i.imgur.com/Jjwsc.jpg 'サンプル')
 
 - Kafka Connect は kafka とデータシステム間のイベント連携を容易にするためのフレームワーク
   - Kafka とデータシステムを接続インターフェースの Connect API と Connect API を利用したアプリケーションのランタイムを提供する
