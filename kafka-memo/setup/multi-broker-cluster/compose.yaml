@@ -1,0 +1,88 @@
+services:
+  zookeeper:
+    image: docker.io/confluentinc/cp-zookeeper:7.2.1
+    hostname: zookeeper
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+
+  broker-1:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker-1
+    container_name: broker-1
+    depends_on:
+      - zookeeper
+    ports:
+      - 19092:19092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:19092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker-1:9092,EXTERNAL://localhost:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  broker-2:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker-2
+    container_name: broker-2
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker-2:9092,EXTERNAL://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  broker-3:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: broker-3
+    container_name: broker-3
+    depends_on:
+      - zookeeper
+    ports:
+      - 39092:39092
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CLIENT://:9092,EXTERNAL://:39092
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://broker-3:9092,EXTERNAL://localhost:39092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  cli:
+    image: docker.io/confluentinc/cp-kafka:7.2.1
+    hostname: cli
+    container_name: cli
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+    entrypoint: /bin/bash
+    tty: true
+
+  gui:
+    image: docker.io/obsidiandynamics/kafdrop:3.30.0
+    hostname: gui
+    container_name: gui
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+    ports:
+      - 9000:9000
+    environment:
+      KAFKA_BROKERCONNECT: 'broker-1:9092,broker-2:9092,broker-3:9092'
+      JVM_OPTS: '-Xms32M -Xmx64M'
+      SERVER_SERVLET_CONTEXTPATH: '/'
