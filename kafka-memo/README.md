@@ -218,3 +218,47 @@ $ kafka-console-consumer --bootstrap-server broker:9092 --topic ticket-order --f
 - 処理済みの Offset のコミット前に Partition のリバランスが発生した場合、別の Consumer が処理済みの Offset をサイド読み取る可能性がある。
   - Consumer が同じイベントを読み取っても冪等になるロジックを実装していれば問題ないが、リバランスを考慮して明示的に Offset をコミットするか、コミット間隔を短くすることがおすすめ
   - 自動コミットは設定値 enable.auto.commit=false で無効化できる。
+
+## Kafka Connect によるデータパイプライン
+
+- Kafka はデータベース、メッセージキュー、データウェアハウスや S3 などと接続して、Kafka をデータのハブとして利用可能
+
+  ![kafka-connect](./setup/connect-cluster/kafka-connect.png)
+  ![エビフライトライアングル](http://i.imgur.com/Jjwsc.jpg 'サンプル')
+
+- Kafka Connect は kafka とデータシステム間のイベント連携を容易にするためのフレームワーク
+  - Kafka とデータシステムを接続インターフェースの Connect API と Connect API を利用したアプリケーションのランタイムを提供する
+  - Kafka Connect ではデータシステムとの連携方法を Connector で定義する。Connector は Source Connector と Sink Connector がある
+    - Source Connector
+      - データシステムから Kafka Topic にイベントを連携する
+    - Sink Connector
+      - Kafka Topic からデータシステムにイベントを連携する
+- Kafka Connect のユースケースは以下
+  - システム間のイベント転送パイプラインを構築
+  - Kafka Streams 等のデータ加工アプリケーションやワークフローと組み合わせて ETL パイプラインを構築する
+  - レガシーシステムのデータソースをイベントに変換し、新しいイベント駆動アプリケーションのデータソースとして扱う
+  - レガシーシステムからマイクロサービスを切り出す
+- Connector Plugin は[Confluent Hub](https://www.confluent.io/hub/)で検索可能
+- Kafka Connect 使用の用件
+  - データは postgres に入っている
+  - 最近購入したチケットから配信ページに飛べるように最後に購入した取引情報を Redis に格納する
+  - ユーザーごとに興味関心の高いコンテンツを表示するレコメンデーションエンジンの学習に必要なデータをデータレイク(MinIO)に集約する。MinIO は S3 互換
+  - Postgres のレコードを転送する Source Connector とイベントをそれぞれのデータソースに取り込む Sink Connector を実行する
+
+## Source Connector の作成
+
+```bash
+$ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_source_connector.json' {"name": "postgresql-irdappdb-ticket-orders-source-connector","config":{...}}
+```
+
+## Sink Connector の作成(redis)
+
+```bash
+$ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_sink_connector_redis.json' {"name": "redis-ticket-order-events-sink-connector",...,"type":"sink"}
+```
+
+## Sink Connector の作成(minIO)
+
+```bash
+$ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_sink_connector_s3.json'
+```
