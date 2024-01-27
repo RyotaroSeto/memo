@@ -1,0 +1,12 @@
+{
+  "name": "redis-ticket-order-events-sink-connector",
+  "config": {
+    "name": "redis-ticket-order-events-sink-connector",
+    "connector.class": "com.github.jcustenborder.kafka.connect.redis.RedisSinkConnector",
+    "topics": "source-postgresql-ticket_orders",
+    "tasks.max": "1",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "redis.hosts": "sink-database"
+  }
+}
