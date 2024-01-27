@@ -244,19 +244,21 @@ $ kafka-console-consumer --bootstrap-server broker:9092 --topic ticket-order --f
   - ユーザーごとに興味関心の高いコンテンツを表示するレコメンデーションエンジンの学習に必要なデータをデータレイク(MinIO)に集約する。MinIO は S3 互換
   - Postgres のレコードを転送する Source Connector とイベントをそれぞれのデータソースに取り込む Sink Connector を実行する
 
-## Source Connector の作成
+## kafka Connect
+
+### Source Connector の作成
 
 ```bash
 $ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_source_connector.json' {"name": "postgresql-irdappdb-ticket-orders-source-connector","config":{...}}
 ```
 
-## Sink Connector の作成(redis)
+### Sink Connector の作成(redis)
 
 ```bash
 $ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_sink_connector_redis.json' {"name": "redis-ticket-order-events-sink-connector",...,"type":"sink"}
 ```
 
-## Sink Connector の作成(minIO)
+### Sink Connector の作成(minIO)
 
 ```bash
 $ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_sink_connector_s3.json'
