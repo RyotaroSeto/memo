@@ -270,4 +270,7 @@ $ curl X POST --url http://localhost:8083/connectors -H 'content-type: applica
 $ kafka-topics --bootstrap-server broker:9092 --create --topic category-filtered-ticket-order --partitions 3 --replication-factor 1
 $ kafka-console-producer --bootstrap-server broker:9092 --topic ticket-order-property --property parse.key=true --property key.separator=":">100:{"order_id":"keoromroo345", "user_id":"100", "content_id": "1", "category":"comedy"}
 $ kafka-console-consumer --bootstrap-server broker:9092 --topic category-filtered-ticket-order --from-beginning --property print.key=true --property key.separator=":">100:{"order_id":"keor-ffomrffoo345", "user_id":"222", "content_id": "2", "category":"live"}
+
+$ kafka-topics --bootstrap-server broker:9092 --create --topic suspicious-user --partitions 3 --replication-factor 1
+$ kafka-console-producer --bootstrap-server broker:9092 --topic suspicious-user --from-beginning --property print.key=true --property key.separator=":" --key-deserializer "org.apache.kafka.common.serialization.StringDeserializer" --value-deserializer "org.apache.kafka.common.serialization.IntegerDeserializer"
 ```
