@@ -104,6 +104,52 @@
       - Broker の ACL(Access Control List)の設定値
   - kafka を動作するために Zookeeper は必須だったが、kafka2.8 以降 Kafka クラスタを起動するモードが使用可能となった。このモードは Zookeeper に保存されていたメタデータを全て Broker で管理できるようになった
 
+## kafka トランザクション
+
+- kafka のイベントの配信品質は 3 つある
+  - 最低 1 回の配信(At Least Once)
+    - kafka のデフォルト
+  - 最大 1 回の配信(At Most Once)
+  - 正確に 1 回の配信(Exactly Once)
+- At Least Once はイベントの重複を引き起こす
+  - Producer でイベントを重複送信
+    - 業務ロジックエラーからの復旧により、複数回同じイベントを送信した
+    - アプリケーションのクラッシュ後に処理を再実行した
+    - イベント送信が実際には完了しているにも関わらず、通信断などの影響でリトライされた
+  - Consumer でイベントを重複受信
+    - Producer でイベントが重複して送信された
+    - Producer からイベントを送信されたが、エラー等の理由でビジネスロジックの処理がキャンセルされた
+- At Least Once のイベント配信品質で発生するデータ不整合を防ぐにはトランザクション有効
+  - Producer
+    - トランザクション内のイベントは処理に成功した場合は全て有効なイベントとして Topic に書き込む
+    - トランザクション内のイベントは処理に失敗した場合も Topic に書き込むが無効化される
+    - 同一とみなされる Producer から送信済みのイベントはリトライ後も Topic/Partition に重複して書き込みされない
+  - Consumer
+    - トランザクションが成功したイベントのみ処理対象とする
+    - イベントがすでに処理済みであれば Offset がコミットされるため、重複して読み取り、しょりすることはない
+- トランザクションの仕組み
+
+  - Producer と Consumer は内部で Transaction Coordinator とトランザクションログともやりとりしている
+    - Transaction Coordinator はトランザクションの実行状況を管理する Kafka Broker 内のプリセス。
+    - トランザクションログはトランザクションの実行状況を保持する特別な Topic。通常は\_\_tranzaction_state という名前の Topic になる。Transaction Coordinator はトランザクションログにトランザクション状況のイベントを書き込む
+
+- トランザクションが有効な Producer の設定値
+  - acks
+    - “all” リーダーレプリカを含めて指定数の全てのレプリカにイベントを書き込みできたら完了とみなす
+  - enable.idempotence
+    - “true” Exactly Once の配信品質を有効化する
+  - max.in.flight.requests.per.connection
+    - “5 以下” 1 つのコネクションでイベントを送信待ち可能リクエスト数の最大値
+  - retries
+    - “0 より大きい数値” リトライは有効化する
+  - transactional.id
+    - “null 以外の文字列” トランザクションを実行する Producer を識別する ID
+- トランザクションが有効な Consumer の設定値
+  - isolation.level
+    - “read_committed” イベント受信の分離レベル
+- トランザクションを使用するための Kafka クラスタの設定注意
+  - Producer はトランザクションログの冗長性を確保するため、Topic \_\_tranzaction_state は設定値 transaction.state.log.replication.factor のデフォルト値が 3 に設定されているため 3 つ以上の Broker が必要
+
 ## Practise
 
 ```bash
