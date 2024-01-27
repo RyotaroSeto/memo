@@ -1,0 +1,10 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: ticket-order
+  namespace: ird-kafka
+  labels:
+    strimzi.io/cluster: ird-cluster
+spec:
+  partitions: 6
+  replicas: 3
