@@ -263,3 +263,11 @@ $ curl X POST --url http://localhost:8083/connectors -H 'content-type: applica
 ```bash
 $ curl X POST --url http://localhost:8083/connectors -H 'content-type: application/json' -d '@create_sink_connector_s3.json'
 ```
+
+## kafka Streams
+
+```bash
+$ kafka-topics --bootstrap-server broker:9092 --create --topic category-filtered-ticket-order --partitions 3 --replication-factor 1
+$ kafka-console-producer --bootstrap-server broker:9092 --topic ticket-order-property --property parse.key=true --property key.separator=":">100:{"order_id":"keoromroo345", "user_id":"100", "content_id": "1", "category":"comedy"}
+$ kafka-console-consumer --bootstrap-server broker:9092 --topic category-filtered-ticket-order --from-beginning --property print.key=true --property key.separator=":">100:{"order_id":"keor-ffomrffoo345", "user_id":"222", "content_id": "2", "category":"live"}
+```
