@@ -170,3 +170,17 @@ sample-0.1.0.tgz
         - dev環境用の設定値でinstall
         - helm install -f values.yaml -f dev.yaml myChart/
         <img width="480" alt="helm" src="https://github.com/RyotaroSeto/microservices-memo/assets/70475997/8b73de5a-60ee-4250-82db-2f52d9783e06">
+
+```bash
+$ helm create mychart # 雛形作成
+$ helm install mychart ./mychart # インストール
+$ helm install mychart ./mychart --debug --dry-run # デバッグ
+```
+- yaml ファイルの中の「name」部分をハードコーディングするのは良くない
+- 「name」は Release ごとにユニークであるべき。
+
+## 組み込み変数一覧
+<img width="540" alt="helmchart" src="https://github.com/RyotaroSeto/microservices-memo/assets/70475997/cdaef48d-fc1c-4ba2-9baa-2e3ad0c772bf">
+
+- 利用頻度が多いのは「Release」,「Chart」,「Values」
+
