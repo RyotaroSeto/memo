@@ -183,4 +183,63 @@ $ helm install mychart ./mychart --debug --dry-run # デバッグ
 <img width="540" alt="helmchart" src="https://github.com/RyotaroSeto/microservices-memo/assets/70475997/cdaef48d-fc1c-4ba2-9baa-2e3ad0c772bf">
 
 - 利用頻度が多いのは「Release」,「Chart」,「Values」
+- 以下のようにquote functionをつけると出力される文字列がダブルクォーテーションになる
+    - つけないとダブルクォーテーションなし
+    - helmには60を超えるfunctionがある
+    - 「upper」で大文字になる
+    - 「default」を使うことでデフォルト値を設定できる
+        - 「default」は繰り返し使用すべきでない。ただし、values.yamlで宣言できない変数に使うには最適
+    - if / elseによる条件分岐
+        - 例えばPersistentVolumeを使用する場合、PVを宣言し、使わない場合emptyDirを使うなどの条件分岐ができる
+        - helmにはホワイトスペース(空白)を扱うツールがある。「{{-」や「-}}」のように二重波括弧にダッシュをつけることでホワイトスペースを扱える。
+            - 「{{-」で左側の改行文字を取り除く
+            - 「-}}」で右側の改行文字を取り除く
+    - withによる範囲指定
+        - 変数のスコープを変更できる。
+        - withを使ったことで「.drink」を呼び出す階層が浅くなる
+        - 「title | quote」でTitle Case(先頭を大文字)にし、ダブルコーテーションがつく
+        - また「tuple」functionを使って簡単に反復処理ができる
+    - rangeによるループ
+    - defineによる変数定義
+    - templateで定義した変数をインポート
+    - includeによる変数読み込み
+    - 変数をtemplate内で代入する仕組み
+        - 「$変数名」と「:=」を利用することでtemplate内で変数を代入できる
+            - rangeと組み合わせると便利「$index」は予約後で0から始まりループを繰り返すたびにひとつずつインクリメントされる。rangeを使ってkey,valueが取得できる
 
+```yaml
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  myvalue: 'Hello World'
+  drink: {{ .Values.favorite.drink }} # coffee
+  food: {{ quote .Values.favorite.food }} "pizza"
+  food2: {{ .Values.favorite.animal | quote }} # "cat"
+  animal: {{ .Values.favorite.animal | upper | quote }} # "CAT"
+  animal2: {{ .Values.favorite.animalc | default "dog" | quote }} # "dog"
+  {{ if eq .Values.favorite.drink "coffee" }}mug: true{{ end }} # mug: true
+  {{- if eq .Values.favorite.drink "coffee" }}
+  mug: true # mug: true
+  {{- end }}
+  {{- with .Values.favorite }}
+  drink: {{ .drink | default "tea" | quote }}
+  food: {{ .food | upper | quote }}
+  {{- end }}
+  toppings: |-
+    {{- range .Values.pizzaToppings }}
+    - {{ . | title | quote }}
+    {{- end }}
+  sizes: |-
+    {{- range tuple "small" "medium" "large" }}
+    - {{ . }}
+    {{- end }}
+  {{- $relname := .Release.Name -}}
+  {{- with .Values.favorite }}
+  release: {{ $relname }} # mychart
+  {{- end }}
+```
+
+- Named Template
+    - template Nameがグローバルスコープである
+    - もし同じ名前のふたつのtemplateを宣言した場合、あと勝ちで最後に読み込まれた方で上書きされる
+    - サブChart内のtemplateも親のChartと一緒にコンパイルされるため、templateにはChart独自の名前をつけて重複しないようにする
