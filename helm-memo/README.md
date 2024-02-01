@@ -243,3 +243,31 @@ data:
     - template Nameがグローバルスコープである
     - もし同じ名前のふたつのtemplateを宣言した場合、あと勝ちで最後に読み込まれた方で上書きされる
     - サブChart内のtemplateも親のChartと一緒にコンパイルされるため、templateにはChart独自の名前をつけて重複しないようにする
+
+- _Helper Files
+    - templateファイルには次の規約がある
+        - template/配下のファイルはKubernetesマニフェストとして扱われる
+        - NOTE.txtは例外で、マニフェストとして扱われない
+        - 「_」で始まるファイルはマニフェストとして扱われない
+        - 「_」で始まるファイルはKubernetesマニフェストとして扱われないが、Chartのtemplateのどこからでも利用できる。例えば「_helpers.tpl」のようにヘルパーとしてグローバルな値を定義したい時利用する
+- Define/Templateアクション
+    - 「define」「template」アクションはセットで利用する
+        - 「define」で変数定義
+        - 「template」で変数呼び出し
+    - define,templateはグローバルに使えるため、Chart全体で利用できる
+    
+    ```yaml
+    {{/* AGenerate basic labels */}}
+    {{- define "mychart.labels" }}
+      labels:
+        generator: helm
+        data: {{ now| htmlDate }}
+    {{- end}}
+    ```
+    
+    - 「define」のようにのようにグローバルな値は大抵「_helpers.tpl」のゆなヘルパーファイルで宣言する
+    - 「define」の宣言箇所は{{/* */}}とくくるのが定番の作法
+    - {{- template "mychart.labels" . }}と定義すると別ファイル`_helpers.tpl`で定義したdefineのlabelsの中が呼ばれる
+- Include Function
+    - 「include」functionは「template」アクションと同じように「define」で定義した値を読み込む
+    - templateよりもincludeが望ましい
