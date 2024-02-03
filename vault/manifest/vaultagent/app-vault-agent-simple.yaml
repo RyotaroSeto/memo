@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-vault-agent-simple
+  labels:
+    app: app-vault-agent-simple
+  annotations:
+    # InjectorによるVault Agentの挿入を有効化
+    vault.hashicorp.com/agent-inject: "true"
+
+    # 使用するVault上のRoleを指定
+    vault.hashicorp.com/role: "app"
+
+    # Vaultのsecret/data/app/configに登録されている秘密情報を使う
+    # Pod内に/vault/secrets/app-config.txtというファイルが作成され秘密情報が記載される
+    vault.hashicorp.com/agent-inject-secret-app-config.txt: "secret/app/config"
+spec:
+  containers:
+    - name: app
+      image: ubuntu:22.04
+      command: ["/bin/sh", "-c", "while :; do sleep 10; done"]
+  serviceAccountName: app # Vaultの認証に使うためのServiceAccount

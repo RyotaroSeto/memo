@@ -1,0 +1,16 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: app-vault-spc
+spec:
+  provider: vault
+  parameters:
+    vaultAddress: "http://vault.vault:8200" # Vaultのエンドポイントを指定
+    roleName: "app" # 使用するVault上のRoleを指定
+    objects: |
+      - objectName: "username-from-csi" # マウント時のファイル名
+        secretPath: "secret/data/app/config" # Vault上での秘密情報登録先
+        secretKey: "USERNAME" # Vault上での秘密情報のKey
+      - objectName: "password-from-csi" # マウント時のファイル名
+        secretPath: "secret/data/app/config" # Vault上での秘密情報登録先
+        secretKey: "PASSWORD" # Vault上での秘密情報のKey

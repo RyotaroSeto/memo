@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-vault-csi
+  labels:
+    app: app-vault-csi
+spec:
+  containers:
+    - name: app
+      image: ubuntu:22.04
+      command: ["/bin/sh", "-c", "while :; do sleep 10; done"]
+      volumeMounts: # 秘密情報をVolumeとしてマウント
+        - name: app-secrets
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+  volumes: # 秘密情報をVolumeとして定義
+    - name: app-secrets
+      csi:
+        driver: secrets-store.csi.k8s.io # CSI Driverとしてsecrets-store-csi-driverを指定
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "app-vault-spc" # 使用するSecretProviderClassを指定
+  serviceAccountName: app # Vaultの認証に使うためのServiceAccount

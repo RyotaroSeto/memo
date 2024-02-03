@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-vault-vso
+  namespace: default
+  labels:
+    app: app-vault-vso
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-demo-vso
+  template:
+    metadata:
+      labels:
+        app: vault-demo-vso
+    spec:
+      containers:
+        - name: app
+          image: ubuntu:22.04
+          command: ["/bin/sh", "-c", "while :; do sleep 10; done"]
+          env: # 作成されたSecretから環境変数を設定
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret-from-vso
+                  key: USERNAME
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret-from-vso
+                  key: PASSWORD
