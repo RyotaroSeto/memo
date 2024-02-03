@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: echo-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: happy-helming
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
