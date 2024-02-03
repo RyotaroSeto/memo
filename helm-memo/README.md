@@ -271,3 +271,53 @@ data:
 - Include Function
     - 「include」functionは「template」アクションと同じように「define」で定義した値を読み込む
     - templateよりもincludeが望ましい
+
+## helm Chartの作り方
+
+- Chartを作る際にいきなりChartを作るのでなく、先に動作確認のとれたKubernetesリソースをマニフェスト化しておく。
+- helm Chartの[ベストプラクティス](https://helm.sh/docs/chart_best_practices/#standardlabels)
+- Chartを作る順番
+    - Kubernetesマニフェストの作成・動作確認
+    - マニフェストのtemplate化
+    - lintやtestで静的解析と動作確認
+    - Chartの公開
+- deployment.yamlは以下の項目をtemplate化
+    - metadata.name
+    - labelsブロック
+    - replicasの数
+    - image名とタグ
+    - imagePullPolicy
+    - livenessProbeとreadnessProbe
+- service.yamlは以下の項目をtemplate化
+    - metadata.name
+    - type
+    - selector
+    - port番号
+- 手順
+    - helm create testhelm
+    - rm -rf testhelm/templates/*.yaml
+    - NOTES.txtは後で書き換える
+    - _helpers.tplは初期状態のまま
+    - helm list testhelmでlintする
+    - (helm installした後に)helm testをする
+    - Chartパッケージを公開用にtarボールに固める(Chart.yaml変数)
+    - READMEにChartのインストールコマンドやパラメータの説明を記載する
+    - helm package testhelm/
+
+## SubCharts
+
+- 定義次第ではひとつのChartの中で複数のソフトウェアを管理することもできる
+- Chart間で依存関係を持たせる仕組みをsubChartsと呼ぶ(envoyを用いたリバースプロキシが例)
+- 依存関係を扱うための仕組みがhelmで用意されている。「requirements.yaml」
+    - 依存するChartの名前やバージョン、Chartリポジトリの情報を記載する
+    - requirements.yamlが存在するディレクトリに移動し、helm dependency updateを実行すると依存対象のSubChartがchartsディレクトリ配下にダウンロードされる
+- 親Chartのvalues.yamlでSubChartの挙動を定義する
+
+## Hooks
+
+- テスト用のyamlファイルのアノテーションに記載してある「helm.sh/hook」もその機能
+- Hooksを利用することで、Releaseのライフサイクルにおいて特定の処理を実施できる
+- 例えば以下
+    - Chartがインストールされる前に、ConfigMapやSecretを作成する
+    - Chartを新しくインストールする前にデータベースのバックアップ用ジョブを実行する
+    - Releaseを削除する前にジョブを実行して、安全にサービスを終了される
