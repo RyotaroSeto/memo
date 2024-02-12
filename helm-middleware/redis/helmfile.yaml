@@ -9,5 +9,7 @@ releases:
     chart: bitnami/redis
     version: 18.12.1
     values:
-      - usePassword: false
+      - usePassword: true
+      - usePasswordFile: true
+      - existingSecret: redis-password-secret
       # - "./config.yaml"
