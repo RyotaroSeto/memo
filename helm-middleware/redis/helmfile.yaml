@@ -1,0 +1,13 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+# リリースに必要な設定値を指定する
+releases:
+  - name: redis
+    namespace: redis
+    chart: bitnami/redis
+    version: 18.12.1
+    values:
+      - usePassword: false
+      # - "./config.yaml"
