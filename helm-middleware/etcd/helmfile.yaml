@@ -1,0 +1,10 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+# リリースに必要な設定値を指定する
+releases:
+  - name: etcd
+    namespace: etcd
+    chart: bitnami/etcd
+    version: 9.11.0
