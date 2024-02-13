@@ -1,0 +1,10 @@
+apiVersion: v2
+name: etcd
+description: A Helm chart for etcd
+type: application
+version: 9.11.0
+appVersion: 3.5.12
+dependencies:
+  - name: etcd
+    version: 9.11.0
+    repository: https://charts.bitnami.com/bitnami
