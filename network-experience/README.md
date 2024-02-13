@@ -45,8 +45,26 @@ root@UBUNTU:/home/ubuntu# tinet up -c /mnt/c/tinet/spec_01.yaml | sh -x
 root@UBUNTU:/home/ubuntu# tinet conf -c /mnt/c/tinet/spec_01.yaml | sh -x
 ```
 
-## 9.検証環境の動作確認
+## 9.検証環境テストコマンド実行
+```bash
+root@UBUNTU:/home/ubuntu# tinet test -c /mnt/c/tinet/spec_01.yaml | sh -x
+```
+
+## 10.ネットワーク環境の可視化
+```bash
+root@UBUNTU:/home/ubuntu# apt install graphviz
+root@UBUNTU:/home/ubuntu# tinet img -c /mnt/c/tinet/spec_01.yaml | dot -Tpng > /mnt/c/tinet/spec_01.png
+```
+
+## 11.検証環境の動作確認
 ```bash
 root@UBUNTU:/home/ubuntu# docker exec -it cl1 /bin/bash
 root@cl1:/#
+root@cl1:/# curl -k https://www.example.com/
+sv1.example.com
+```
+
+## 12.検証環境の削除
+```bash
+root@UBUNTU:/home/ubuntu# tinet down -c /mnt/c/tinet/spec_01.yaml | sh -x
 ```
