@@ -1,5 +1,18 @@
 # 検証環境構築
 
+## 0.Multipassの使い方
+```bash
+# VMの情報を確認
+$ multipass info UBUNTU
+# インスタンスを停止
+$ multipass stop UBUNTU
+# インスタンスを削除
+$ multipass delete UBUNTU
+# インスタンスを完全に削除
+$ multipass delete --purge UBUNTU
+```
+
+
 ## 1.Multipass をインストール
 ```bash
 $ brew install multipass
