@@ -44,6 +44,13 @@
   - Istio は HTTP/2 の LoadBalancing に対応しているため、サービスは Istio を使用するだけで gRPC Load Balancing を実現できる
   - Load Balancing は Envoy proxy 上で行われるので、サービスがどの言語を使用しているかに依存しない
 
+### Istio Ingress Gateway
+
+- Istio Ingress Gateway は実体は Envoy Proxy
+- アプリケーションと一緒にデプロイされる Envoy proxy と同じ control plane となる Istiod と、 API を介してコミュニケーションを行い設定を更新する
+- どのようなエンドポイントを公開してどのサービスにリクエストをプロキシするかの情報は Istio の CRD である Gateway, VirtualService を使って行う。stiod はこれらの CRD から情報を収集して、Istio Ingress Gateway へ渡す。
+- 各リソースは各サービスの namespace に配置できる。
+
 ## Istio Ambient Mesh
 
 - 従来の Istio のサイドカーパターンには以下の問題があった
