@@ -101,3 +101,6 @@ log_min_duration_statementより優先度が低いため、log_min_duration_samp
 log_rotation_size | 指定した時間(分)またはサイズでログファイルを循環する。両方とも指定可能 |
 | log_rotation_on_rotation | ローテーション時に同じ名前のログファイルが存在する場合に、切り詰める/上書きする(on),追記するか(off)を設定 |
 - ローテーション機能を有効にするには上記に加え、ローテーション時に異なるファイル名になるよう、log_filenameを以下のように設定する
+```sql
+log_filename = 'postgresql-%Y-%m%-%d_%H%M%S.log'
+```
