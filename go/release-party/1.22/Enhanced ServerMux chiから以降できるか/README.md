@@ -55,3 +55,25 @@ h := func(w http.AResponseWriterm r *http.Request) {
 }
 mux := http.NewServeMux()
 mux.HandleFunc("/user/{id}", h)
+```
+
+## Go 1.22のServeMuxとchiの違い
+- ルーティング判定条件
+  - chiは完全一致
+  - http.ServeMuxは前方一致
+    - Go1.22からPathの末尾に{$}を指定することで完全一致となる
+- Valueのパターンマッチ
+  - chiは以下のようにパターンを指定できる。http.ServeMuxではできない
+  - 正規表現
+    - `/date/{yyyy:\\d\\d\\d\\d}/{mm:\\d\\d}/{dd:\\d\\d}`
+    - `/date/2017/04/01`
+  - 部分一致
+    - `/user-{userID}`
+    - `/user-12345`
+  - 複数のValue
+    - `/{yyyy}-{mm}-{dd}`
+    - `/2024-10-10`
+  - GraphQLだとValueのパターンマッチを使う機会がないのでhttp.ServeMuxに以降できるが、RESTだと厳しい
+- ルーティングやミドルウェアの設定方法
+  - chiではUseによるミドルウェアの設定。Routeによるネスト
+  - https://github.com/go-michi   michiを作った。(100%ServeMux互換)
