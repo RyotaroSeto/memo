@@ -35,7 +35,7 @@ func sum8(s []int64) int64 {
 - 以下の`sumFoo`,`sumBar`を比較すると`sumBar`の方が 20%速い
   - 理由は CPU がメモリからフェッチするキャッシュラインが少ないから。
 
-![ClusterIP](./images/test.png)
+![ClusterIP](./test.png)
 
 ```go
 type Foo struct {
